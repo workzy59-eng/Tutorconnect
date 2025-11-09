@@ -80,7 +80,7 @@ const createUserProfile = async (firebaseUser: FirebaseUser, details: { name: st
             reviews: [],
             hourlyRate: 20,
             profileViews: 0,
-            avatarUrl: firebaseUser.photoURL || undefined,
+            ...(firebaseUser.photoURL && { avatarUrl: firebaseUser.photoURL }),
         };
     } else {
         newUserProfile = {
@@ -89,7 +89,7 @@ const createUserProfile = async (firebaseUser: FirebaseUser, details: { name: st
             role: UserRole.Student,
             gradeLevel: GRADE_LEVELS[2],
             learningGoals: "",
-            avatarUrl: firebaseUser.photoURL || undefined,
+            ...(firebaseUser.photoURL && { avatarUrl: firebaseUser.photoURL }),
         };
     }
 
@@ -113,7 +113,13 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Use
     const userDocRef = doc(db, 'users', userId);
     // Exclude fields that shouldn't be updated directly from a profile form
     const { id, email, role, ...updatableData } = profileData;
-    await updateDoc(userDocRef, updatableData);
+    
+    // Firestore doesn't allow `undefined` values. We need to clean the object.
+    const cleanData = Object.fromEntries(
+      Object.entries(updatableData).filter(([_, v]) => v !== undefined)
+    );
+
+    await updateDoc(userDocRef, cleanData);
 };
 
 
